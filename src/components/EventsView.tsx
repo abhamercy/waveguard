@@ -412,7 +412,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
             </h3>
             <p className="text-purple-200/80 text-sm mb-4">
               All photos from this event will expire 1 hour after it ends.
-              Capture the moment while it lasts! ⚡
+              Capture the moment while it lasts!
             </p>
             <div className="p-3 bg-black/20 rounded-lg">
               <p className="text-xs text-purple-300/70">Time remaining:</p>
