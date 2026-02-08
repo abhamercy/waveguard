@@ -69,7 +69,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
     },
     {
       id: "2",
-      name: "Side Stage",
+      name: "VIP Stage",
       artist: "Zara Larsson",
       location: "East Pavilion",
       startTime: "7:30 PM",
@@ -80,7 +80,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
     },
     {
       id: "3",
-      name: "VIP Stage",
+      name: "Side Stage",
       artist: "Adele",
       location: "VIP Lounge",
       startTime: "10:45 PM",

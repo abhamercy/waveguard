@@ -63,7 +63,7 @@ export function AlertsView() {
     severity: "medium",
   });
 
-  // ✅ make these state so we can append
+  // make these state so we can append
   const [myAlerts, setMyAlerts] = useState<AlertItem[]>([
     {
       id: "1",
@@ -410,7 +410,7 @@ export function AlertsView() {
         </div>
       </div>
 
-      {/* ✅ Create Alert Modal (same styling, now it works) */}
+      {/* Create Alert Modal (same styling, now it works) */}
       {isCreateOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"

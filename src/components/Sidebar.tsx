@@ -5,7 +5,7 @@ interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
   onSignOut: () => void;
-  onOpenNotifications: () => void; // ✅
+  onOpenNotifications: () => void; 
 }
 
 function AuraFlowLogo() {
@@ -45,7 +45,7 @@ export function Sidebar({
   currentView,
   onViewChange,
   onSignOut,
-  onOpenNotifications, // ✅ IMPORTANT: destructure it
+  onOpenNotifications, // IMPORTANT: destructure it
 }: SidebarProps) {
   const navItems = [
     { id: "dashboard" as ViewType, icon: Zap, label: "Dashboard" },
@@ -91,7 +91,7 @@ export function Sidebar({
       </nav>
 
       <div className="p-4 border-t border-cyan-500/20 space-y-2">
-        {/* ✅ Notifications button should be ONE button */}
+        {/* Notifications button should be ONE button */}
         <button
           onClick={onOpenNotifications}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-cyan-100/70 hover:bg-slate-800/50 transition-all"
