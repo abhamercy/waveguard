@@ -4,7 +4,9 @@ import w3 from "../assets/w3.jpg";
 import z1 from "../assets/z1.jpg";
 import z2 from "../assets/z2.jpg";
 
-import { useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { SharePhotoModal } from "./SharePhotoModal";
+
 import {
   Camera,
   Clock,
@@ -33,6 +35,7 @@ interface Event {
   status: "live" | "upcoming" | "ended";
   attendees: number;
   gradient: string;
+   photoUrl?: string;
 }
 
 interface Photo {
@@ -53,46 +56,69 @@ interface Photo {
 }
 
 export function EventsView({ selectedEventId = null }: EventsViewProps) {
+  const [isShareOpen, setIsShareOpen] = useState(false);
+const [shareTargetEventId, setShareTargetEventId] = useState<string | null>(null);
+
+const [shareForm, setShareForm] = useState({
+  title: "",
+  location: "",
+  when: "",
+});
+
+const [file, setFile] = useState<File | null>(null);
+const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+// create a preview URL for the chosen image
+useEffect(() => {
+  if (!file) {
+    setPreviewUrl(null);
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  setPreviewUrl(url);
+  return () => URL.revokeObjectURL(url);
+}, [file]);
+
   const [activeEventId, setActiveEventId] = useState(selectedEventId || "1");
 
-  const events: Event[] = [
-    {
-      id: "1",
-      name: "Main Stage",
-      artist: "The Weeknd",
-      location: "Central Arena",
-      startTime: "8:00 PM",
-      endTime: "10:30 PM",
-      status: "live",
-      attendees: 5420,
-      gradient: "from-pink-500 to-purple-500",
-    },
-    {
-      id: "2",
-      name: "VIP Stage",
-      artist: "Zara Larsson",
-      location: "East Pavilion",
-      startTime: "7:30 PM",
-      endTime: "9:45 PM",
-      status: "live",
-      attendees: 3280,
-      gradient: "from-cyan-500 to-blue-500",
-    },
-    {
-      id: "3",
-      name: "Side Stage",
-      artist: "Adele",
-      location: "VIP Lounge",
-      startTime: "10:45 PM",
-      endTime: "12:00 AM",
-      status: "upcoming",
-      attendees: 890,
-      gradient: "from-purple-500 to-indigo-500",
-    },
-  ];
+const [events, setEvents] = useState<Event[]>([
+  {
+    id: "1",
+    name: "Main Stage",
+    artist: "The Weeknd",
+    location: "Central Arena",
+    startTime: "8:00 PM",
+    endTime: "10:30 PM",
+    status: "live",
+    attendees: 5420,
+    gradient: "from-pink-500 to-purple-500",
+  },
+  {
+    id: "2",
+    name: "VIP Stage",
+    artist: "Zara Larsson",
+    location: "East Pavilion",
+    startTime: "7:30 PM",
+    endTime: "9:45 PM",
+    status: "live",
+    attendees: 3280,
+    gradient: "from-cyan-500 to-blue-500",
+  },
+  {
+    id: "3",
+    name: "Side Stage",
+    artist: "Adele",
+    location: "VIP Lounge",
+    startTime: "10:45 PM",
+    endTime: "12:00 AM",
+    status: "upcoming",
+    attendees: 890,
+    gradient: "from-purple-500 to-indigo-500",
+  },
+]);
 
-  const [photos] = useState<Photo[]>([
-    {
+
+const [photos, setPhotos] = useState<Photo[]>([     {
       id: "1",
       userId: "u1",
       userName: "Emma Wilson",
@@ -181,10 +207,17 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
             Share and view real-time moments from the festival
           </p>
         </div>
-        <button className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-pink-500/25 transition-all flex items-center gap-2">
-          <Camera className="w-5 h-5" />
-          Share Photo
-        </button>
+      <button
+  onClick={() => {
+    setShareTargetEventId(activeEventId); // share to currently selected event
+    setIsShareOpen(true);
+  }}
+  className="px-4 py-2 bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-500/30 rounded-xl text-white font-medium transition-all flex items-center gap-2"
+>
+  <Camera className="w-5 h-5" />
+  Share Photo
+</button>
+
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -441,6 +474,45 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
           </div>
         </div>
       </div>
+{isShareOpen && shareTargetEventId && (
+  <SharePhotoModal
+    eventName={events.find((e) => e.id === shareTargetEventId)?.name ?? "Event"}
+    onClose={() => {
+      setIsShareOpen(false);
+      setShareTargetEventId(null);
+    }}
+    onShare={(files) => {
+      const first = files[0];
+      if (!first) return;
+
+      const url = URL.createObjectURL(first);
+
+      setPhotos((prev) => [
+        {
+          id: crypto.randomUUID(),
+          userId: "you",
+          userName: "You",
+          userAvatar: "YO",
+          userSchool: "Your School",
+          userGradient: "from-cyan-400 to-purple-500",
+          eventId: shareTargetEventId,
+          caption: "Just shared a moment ✨",
+          timestamp: "just now",
+          likes: 0,
+          comments: 0,
+          isLiked: false,
+          imageUrl: url,
+        },
+        ...prev,
+      ]);
+
+      setIsShareOpen(false);
+      setShareTargetEventId(null);
+    }}
+  />
+)}
+
+
     </div>
   );
 }
