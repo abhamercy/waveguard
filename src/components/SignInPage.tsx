@@ -71,9 +71,9 @@ export function SignInPage({ onSignIn, onCreateAccount }: SignInPageProps) {
               <AuraFlowLogo />
             </div>
             <h1 className="text-4xl font-bold bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 text-transparent mb-2">
-              AuraFlow
+              InterLink
             </h1>
-            <p className="text-cyan-300/70 text-sm">Festival Community Safety</p>
+            <p className="text-cyan-300/70 text-sm"> Safety and Community All in One</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
