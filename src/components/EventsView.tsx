@@ -3,9 +3,9 @@ import w2 from "../assets/w2.jpg";
 import w3 from "../assets/w3.jpg";
 import z1 from "../assets/z1.jpg";
 import z2 from "../assets/z2.jpg";
-
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { SharePhotoModal } from "./SharePhotoModal";
+import { Play, Pause, Volume2 } from "lucide-react";
 
 import {
   Camera,
@@ -35,7 +35,9 @@ interface Event {
   status: "live" | "upcoming" | "ended";
   attendees: number;
   gradient: string;
-   photoUrl?: string;
+  photoUrl?: string;
+  trackTitle?: string;
+  trackUrl?: string;
 }
 
 interface Photo {
@@ -56,7 +58,78 @@ interface Photo {
 }
 
 export function EventsView({ selectedEventId = null }: EventsViewProps) {
-  const [isShareOpen, setIsShareOpen] = useState(false);
+const [activeEventId, setActiveEventId] = useState(selectedEventId || "1");
+const audioRef = useRef<HTMLAudioElement | null>(null);
+const [isPlaying, setIsPlaying] = useState(false);
+const [nowPlayingEventId, setNowPlayingEventId] = useState<string | null>(null);
+const [progress, setProgress] = useState(0); // 0..1
+useEffect(() => {
+  const audio = audioRef.current;
+  if (!audio) return;
+
+  const onPlay = () => setIsPlaying(true);
+  const onPause = () => setIsPlaying(false);
+  const onEnded = () => {
+    setIsPlaying(false);
+    setProgress(0);
+  };
+  const onTimeUpdate = () => {
+    if (audio.duration) {
+      setProgress((audio.currentTime / audio.duration) * 100);
+    }
+  };
+
+  audio.addEventListener("play", onPlay);
+  audio.addEventListener("pause", onPause);
+  audio.addEventListener("ended", onEnded);
+  audio.addEventListener("timeupdate", onTimeUpdate);
+
+  return () => {
+    audio.removeEventListener("play", onPlay);
+    audio.removeEventListener("pause", onPause);
+    audio.removeEventListener("ended", onEnded);
+    audio.removeEventListener("timeupdate", onTimeUpdate);
+  };
+}, [activeEventId]);
+const toggleEventSnippet = async (event: Event) => {
+  if (!event.trackUrl) return;
+
+  // create audio once
+  if (!audioRef.current) {
+    audioRef.current = new Audio();
+    audioRef.current.volume = 0.9;
+  }
+
+  const audio = audioRef.current;
+
+  // if clicking the same event that's currently loaded -> toggle play/pause
+  const sameEvent = nowPlayingEventId === event.id;
+
+  if (sameEvent) {
+    if (audio.paused) {
+      await audio.play();
+    } else {
+      audio.pause();
+    }
+    return;
+  }
+
+  // switching to a new event
+  audio.pause();
+  audio.currentTime = 0;
+  audio.src = event.trackUrl;
+
+  setNowPlayingEventId(event.id);
+
+  try {
+    await audio.play(); // must be triggered by user click
+  } catch {
+    // if browser blocks, user can click again; you can toast if you want
+    setIsPlaying(false);
+  }
+};
+
+const [isShareOpen, setIsShareOpen] = useState(false);
 const [shareTargetEventId, setShareTargetEventId] = useState<string | null>(null);
 
 const [shareForm, setShareForm] = useState({
@@ -79,7 +152,6 @@ useEffect(() => {
   return () => URL.revokeObjectURL(url);
 }, [file]);
 
-  const [activeEventId, setActiveEventId] = useState(selectedEventId || "1");
 
 const [events, setEvents] = useState<Event[]>([
   {
@@ -92,6 +164,9 @@ const [events, setEvents] = useState<Event[]>([
     status: "live",
     attendees: 5420,
     gradient: "from-pink-500 to-purple-500",
+    
+    trackTitle: "Blinding Lights (Preview)",
+    trackUrl: "/audio/weeknd-preview.mp3",
   },
   {
     id: "2",
@@ -103,6 +178,9 @@ const [events, setEvents] = useState<Event[]>([
     status: "live",
     attendees: 3280,
     gradient: "from-cyan-500 to-blue-500",
+
+    trackTitle: "Lush Life (Preview)",
+    trackUrl: "/audio/zara-preview.mp3",
   },
   {
     id: "3",
@@ -114,6 +192,8 @@ const [events, setEvents] = useState<Event[]>([
     status: "upcoming",
     attendees: 890,
     gradient: "from-purple-500 to-indigo-500",
+     trackTitle: "N/A",
+    trackUrl: "/audio/adele-preview.mp3",
   },
 ]);
 
@@ -304,8 +384,49 @@ const [photos, setPhotos] = useState<Photo[]>([     {
                   <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse" />
                   <span className="text-pink-200 font-semibold">LIVE NOW</span>
                 </div>
+                
               )}
+
+
             </div>
+  {activeEvent.trackUrl && (
+  <div className="mt-4 flex items-center gap-3">
+    <button
+      onClick={() => toggleEventSnippet(activeEvent)}
+      className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 text-white font-medium transition-all flex items-center gap-2"
+    >
+      {isPlaying && nowPlayingEventId === activeEvent.id ? (
+        <Pause className="w-5 h-5" />
+      ) : (
+        <Play className="w-5 h-5" />
+      )}
+      <span>
+        {isPlaying && nowPlayingEventId === activeEvent.id ? "Pause" : "Play"} snippet
+      </span>
+    </button>
+
+    <div className="flex-1">
+      <div className="flex items-center gap-2 text-xs text-cyan-300/70 mb-1">
+        <Volume2 className="w-4 h-4" />
+        <span className="truncate">
+          Now playing: {activeEvent.trackTitle ?? "Live Preview"}
+        </span>
+      </div>
+
+      <div className="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all"
+          style={{
+            width:
+              nowPlayingEventId === activeEvent.id ? `${Math.round(progress * 100)}%` : "0%",
+          }}
+        />
+      </div>
+    </div>
+  </div>
+)}
+<br></br>
+<br></br>
 
             {activeEvent.status === "live" ? (
               <div className="space-y-4">
