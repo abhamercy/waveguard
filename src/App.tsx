@@ -26,7 +26,7 @@ const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
           />
         )}
 
-        // App.tsx
+
 {currentView === 'map' && (
   <MapView
     focus={mapFocus}                 // keep your existing focus

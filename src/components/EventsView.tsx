@@ -1,3 +1,9 @@
+import w1 from "../assets/w1.jpg";
+import w2 from "../assets/w2.jpg";
+import w3 from "../assets/w3.jpg";
+import z1 from "../assets/z1.jpg";
+import z2 from "../assets/z2.jpg";
+
 import { useState } from "react";
 import {
   Camera,
@@ -42,6 +48,8 @@ interface Photo {
   likes: number;
   comments: number;
   isLiked: boolean;
+
+  imageUrl: string;
 }
 
 export function EventsView({ selectedEventId = null }: EventsViewProps) {
@@ -51,7 +59,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
     {
       id: "1",
       name: "Main Stage",
-      artist: "The Midnight",
+      artist: "The Weeknd",
       location: "Central Arena",
       startTime: "8:00 PM",
       endTime: "10:30 PM",
@@ -62,7 +70,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
     {
       id: "2",
       name: "Side Stage",
-      artist: "ODESZA",
+      artist: "Zara Larsson",
       location: "East Pavilion",
       startTime: "7:30 PM",
       endTime: "9:45 PM",
@@ -73,7 +81,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
     {
       id: "3",
       name: "VIP Stage",
-      artist: "Porter Robinson",
+      artist: "Adele",
       location: "VIP Lounge",
       startTime: "10:45 PM",
       endTime: "12:00 AM",
@@ -97,6 +105,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
       likes: 47,
       comments: 8,
       isLiked: false,
+      imageUrl: w3,
     },
     {
       id: "2",
@@ -111,6 +120,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
       likes: 89,
       comments: 12,
       isLiked: true,
+      imageUrl: w2,
     },
     {
       id: "3",
@@ -125,6 +135,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
       likes: 34,
       comments: 5,
       isLiked: false,
+      imageUrl: w1
     },
     {
       id: "4",
@@ -134,11 +145,12 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
       userSchool: "MIT",
       userGradient: "from-pink-400 to-purple-500",
       eventId: "2",
-      caption: "ODESZA never disappoints 💜",
+      caption: "Zara Larsson just killed it on stage!",
       timestamp: "3 min ago",
       likes: 56,
       comments: 9,
       isLiked: true,
+      imageUrl: z1
     },
     {
       id: "5",
@@ -148,11 +160,12 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
       userSchool: "UCLA",
       userGradient: "from-orange-400 to-red-500",
       eventId: "2",
-      caption: "The production is next level",
+      caption: "The choreo is next level",
       timestamp: "7 min ago",
       likes: 72,
       comments: 11,
       isLiked: false,
+      imageUrl: z2
     },
   ]);
 
@@ -179,11 +192,10 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
           <button
             key={event.id}
             onClick={() => setActiveEventId(event.id)}
-            className={`text-left p-5 rounded-2xl border transition-all ${
-              activeEventId === event.id
+            className={`text-left p-5 rounded-2xl border transition-all ${activeEventId === event.id
                 ? "bg-slate-800/80 border-cyan-500/50 shadow-lg shadow-cyan-500/20"
                 : "bg-slate-800/50 border-cyan-500/20 hover:border-cyan-500/40"
-            }`}
+              }`}
           >
             <div className="flex items-start justify-between mb-3">
               <div
@@ -280,16 +292,19 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
                       key={photo.id}
                       className="bg-slate-900/50 rounded-xl overflow-hidden border border-cyan-500/10 hover:border-cyan-500/30 transition-all"
                     >
-                      <div className="aspect-[4/3] bg-gradient-to-br from-purple-900/50 to-blue-900/50 relative flex items-center justify-center">
-                        <div className="text-center">
-                          <Camera className="w-12 h-12 text-cyan-400/30 mx-auto mb-2" />
-                          <p className="text-cyan-300/50 text-xs">Live photo</p>
-                        </div>
+                      <div className="aspect-[4/3] relative overflow-hidden bg-slate-900">
+                        <img
+                          src={photo.imageUrl}
+                          alt={photo.caption}
+                          className="h-full w-full object-cover"
+                        />
+
                         <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-xs text-white">
                           <Clock className="w-3 h-3" />
                           {photo.timestamp}
                         </div>
                       </div>
+
 
                       <div className="p-4">
                         <div className="flex items-start gap-3 mb-3">
@@ -315,11 +330,10 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
 
                         <div className="flex items-center gap-4 pt-3 border-t border-cyan-500/10">
                           <button
-                            className={`flex items-center gap-1 text-sm transition-all ${
-                              photo.isLiked
+                            className={`flex items-center gap-1 text-sm transition-all ${photo.isLiked
                                 ? "text-pink-400"
                                 : "text-cyan-300/70 hover:text-pink-400"
-                            }`}
+                              }`}
                           >
                             <Heart
                               className={`w-4 h-4 ${photo.isLiked ? "fill-pink-400" : ""}`}

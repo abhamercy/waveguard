@@ -59,9 +59,9 @@ export function MapView({
 
   // Events on map (you can change these later)
   const liveEvents: LiveEvent[] = [
-    { id: '1', name: 'Main Stage', artist: 'The Midnight', x: 225, y: 125, status: 'live', photoCount: 127, color: { r: 236, g: 72, b: 153 } },
-    { id: '2', name: 'VIP Stage', artist: 'Porter Robinson', x: 490, y: 140, status: 'upcoming', photoCount: 0, color: { r: 139, g: 92, b: 246 } },
-    { id: '3', name: 'Side Stage', artist: 'ODESZA', x: 460, y: 330, status: 'live', photoCount: 89, color: { r: 34, g: 211, b: 238 } },
+    { id: '1', name: 'Main Stage', artist: 'Weeknd', x: 225, y: 125, status: 'live', photoCount: 127, color: { r: 236, g: 72, b: 153 } },
+    { id: '2', name: 'VIP Stage', artist: 'Zara Larsson', x: 490, y: 140, status: 'upcoming', photoCount: 0, color: { r: 139, g: 92, b: 246 } },
+    { id: '3', name: 'Side Stage', artist: 'Adele', x: 460, y: 330, status: 'live', photoCount: 89, color: { r: 34, g: 211, b: 238 } },
   ];
 
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
