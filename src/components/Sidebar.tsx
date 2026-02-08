@@ -1,6 +1,5 @@
-import { Zap, Map, UserCircle, Bell, Settings, LogOut } from 'lucide-react';
+import { Zap, Map, UserCircle, Bell, Settings, LogOut, CalendarDays } from 'lucide-react';
 import type { ViewType } from "../types";
-
 
 interface SidebarProps {
   currentView: ViewType;
@@ -47,6 +46,7 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
   const navItems = [
     { id: 'dashboard' as ViewType, icon: Zap, label: 'Dashboard' },
     { id: 'map' as ViewType, icon: Map, label: 'Live Map' },
+    { id: 'events' as ViewType, icon: CalendarDays, label: 'Live Events' },
     { id: 'friends' as ViewType, icon: UserCircle, label: 'Friends' },
     { id: 'alerts' as ViewType, icon: Bell, label: 'Alerts' },
   ];
