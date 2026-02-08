@@ -23,6 +23,68 @@ type ChatMessage = {
   time: string;
 };
 
+type Suggestion = {
+  id: string;
+  name: string;
+  username: string;
+  mutualFriends: number;
+  avatar: string;
+  gradient: string;
+};
+
+const normUser = (u: string) => u.trim().toLowerCase().replace(/^@/, '');
+
+const MOCK_DIRECTORY: Friend[] = [
+  {
+    id: 'alexr',
+    name: 'Alex Rodriguez',
+    username: '@alexr',
+    location: 'North Entrance',
+    distance: '410m',
+    status: 'online',
+    avatar: 'AR',
+    gradient: 'from-yellow-400 to-orange-500',
+    lastSeen: 'Active now',
+    recentActivity: 'Shared location',
+  },
+  {
+    id: 'ninapatel',
+    name: 'Nina Patel',
+    username: '@ninapatel',
+    location: 'Merch Booth',
+    distance: '640m',
+    status: 'away',
+    avatar: 'NP',
+    gradient: 'from-indigo-400 to-purple-500',
+    lastSeen: '8 min ago',
+    recentActivity: 'Checked into Merch Booth',
+  },
+  {
+    id: 'tombrad',
+    name: 'Tom Bradley',
+    username: '@tombrad',
+    location: 'Food Court',
+    distance: '1.1km',
+    status: 'online',
+    avatar: 'TB',
+    gradient: 'from-teal-400 to-cyan-500',
+    lastSeen: 'Active now',
+    recentActivity: 'Posted crowd alert 2 min ago',
+  },
+  {
+    id: 'maya_k',
+    name: 'Maya Khan',
+    username: '@maya_k',
+    location: 'Side Stage',
+    distance: '780m',
+    status: 'offline',
+    avatar: 'MK',
+    gradient: 'from-pink-400 to-purple-500',
+    lastSeen: '1 hour ago',
+    recentActivity: 'Left the festival',
+  },
+];
+
 export function FriendsView() {
   const [friends, setFriends] = useState<Friend[]>([
     {
@@ -63,11 +125,8 @@ export function FriendsView() {
     },
   ]);
 
-  const [suggestions] = useState([
-    { id: 'alexr', name: 'Alex Rodriguez', username: '@alexr', mutualFriends: 5, avatar: 'AR', gradient: 'from-yellow-400 to-orange-500' },
-    { id: 'ninapatel', name: 'Nina Patel', username: '@ninapatel', mutualFriends: 3, avatar: 'NP', gradient: 'from-indigo-400 to-purple-500' },
-    { id: 'tombrad', name: 'Tom Bradley', username: '@tombrad', mutualFriends: 7, avatar: 'TB', gradient: 'from-teal-400 to-cyan-500' },
-  ]);
+  // suggestions are directory IDs
+  const [suggestions, setSuggestions] = useState<string[]>(['alexr', 'ninapatel', 'tombrad']);
 
   // Search bar for filtering friends list
   const [search, setSearch] = useState('');
@@ -84,9 +143,20 @@ export function FriendsView() {
     });
   }, [friends, search]);
 
+  const suggestionPeople = useMemo(() => {
+    const friendSet = new Set(friends.map((f) => normUser(f.username)));
+    return suggestions
+      .map((id) => MOCK_DIRECTORY.find((p) => p.id === id))
+      .filter(Boolean)
+      .filter((p) => !friendSet.has(normUser((p as Friend).username))) as Friend[];
+  }, [suggestions, friends]);
+
   // ----- Messaging state -----
   const [activeChatFriendId, setActiveChatFriendId] = useState<string | null>(null);
   const [draftMsg, setDraftMsg] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+
   const [chats, setChats] = useState<Record<string, ChatMessage[]>>({
     emma_w: [
       { id: 'm1', from: 'them', text: 'I’m near VIP. You good?', time: '9:12 PM' },
@@ -128,7 +198,7 @@ export function FriendsView() {
     }));
     setDraftMsg('');
 
-    // Optional: simple “auto-reply” for demo feel
+    // Optional: auto-reply for demo
     window.setTimeout(() => {
       const reply: ChatMessage = {
         id: crypto.randomUUID(),
@@ -143,6 +213,52 @@ export function FriendsView() {
     }, 600);
   };
 
+  const addFriend = (person: Suggestion | Friend) => {
+    // Build a Friend object (suggestions don’t have location/status fields)
+    const newFriend: Friend = {
+      id: person.id,
+      name: person.name,
+      username: person.username.startsWith('@') ? person.username : `@${person.username}`,
+      location: 'Festival Grounds',
+      distance: '??m',
+      status: 'online',
+      avatar:
+        (person as any).avatar ??
+        person.name
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase(),
+      gradient: (person as any).gradient ?? 'from-cyan-400 to-blue-500',
+      lastSeen: 'Active now',
+      recentActivity: 'Just connected',
+    };
+
+    setFriends((prev) => {
+      const exists = prev.some((f) => normUser(f.username) === normUser(newFriend.username));
+      if (exists) return prev;
+      return [newFriend, ...prev];
+    });
+
+    // Remove from suggestions if they were there (suggestions is string[])
+    setSuggestions((prev) => prev.filter((id) => id !== newFriend.id));
+  };
+
+  const removeFriend = (friend: Friend) => {
+    setFriends((prev) => prev.filter((f) => f.id !== friend.id));
+
+    // Add them back to suggestions only if they exist in the directory (suggestions is string[])
+    setSuggestions((prev) => {
+      const inDirectory = MOCK_DIRECTORY.some((p) => p.id === friend.id);
+      if (!inDirectory) return prev;
+      return prev.includes(friend.id) ? prev : [friend.id, ...prev];
+    });
+
+    // If you removed the friend you were chatting with, close chat
+    if (activeChatFriendId === friend.id) setActiveChatFriendId(null);
+  };
+
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -151,7 +267,10 @@ export function FriendsView() {
           <p className="text-cyan-300/70">Stay connected with your festival crew</p>
         </div>
 
-        <button className="bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/25 transition-all flex items-center gap-2">
+        <button
+          onClick={() => setAddOpen(true)}
+          className="bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/25 transition-all flex items-center gap-2"
+        >
           <UserPlus className="w-5 h-5" />
           Add Friends
         </button>
@@ -219,7 +338,11 @@ export function FriendsView() {
                           <h4 className="font-bold text-white">{friend.name}</h4>
                           <div
                             className={`w-2 h-2 rounded-full ${
-                              friend.status === 'online' ? 'bg-green-400' : friend.status === 'away' ? 'bg-yellow-400' : 'bg-gray-400'
+                              friend.status === 'online'
+                                ? 'bg-green-400'
+                                : friend.status === 'away'
+                                ? 'bg-yellow-400'
+                                : 'bg-gray-400'
                             }`}
                           />
                         </div>
@@ -239,14 +362,22 @@ export function FriendsView() {
 
                     <p className="text-sm text-cyan-200/70 mb-3">{friend.recentActivity}</p>
 
-                    {/* Only Message button now */}
-                    <button
-                      onClick={() => setActiveChatFriendId(friend.id)}
-                      className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 rounded-lg text-cyan-100 font-medium transition-all text-sm flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      Message
-                    </button>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setActiveChatFriendId(friend.id)}
+                        className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 rounded-lg text-cyan-100 font-medium transition-all text-sm flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Message
+                      </button>
+
+                      <button
+                        onClick={() => removeFriend(friend)}
+                        className="w-full px-4 py-2 bg-slate-900/30 hover:bg-slate-900/50 border border-white/10 rounded-lg text-white/80 font-medium transition-all text-sm"
+                      >
+                        Remove Friend
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -254,15 +385,20 @@ export function FriendsView() {
           </div>
         </div>
 
-        {/* Suggestions (kept as-is) */}
+        {/* Suggestions */}
         <div className="space-y-6">
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/20">
             <h3 className="text-lg font-bold text-white mb-4">Friend Suggestions</h3>
             <div className="space-y-3">
-              {suggestions.map((person) => (
-                <div key={person.id} className="bg-slate-900/30 rounded-xl p-4 border border-cyan-500/10">
+              {suggestionPeople.map((person) => (
+                <div
+                  key={person.id}
+                  className="bg-slate-900/30 rounded-xl p-4 border border-cyan-500/10"
+                >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${person.gradient} flex items-center justify-center text-white font-semibold`}>
+                    <div
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${person.gradient} flex items-center justify-center text-white font-semibold`}
+                    >
                       {person.avatar}
                     </div>
                     <div className="flex-1">
@@ -270,27 +406,10 @@ export function FriendsView() {
                       <p className="text-xs text-cyan-300/60">{person.username}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-cyan-400/70 mb-3">{person.mutualFriends} mutual friends</p>
-                  <button
-                    onClick={() => {
-                      // demo add: convert suggestion into a friend
-                      const already = friends.some((f) => f.id === person.id);
-                      if (already) return;
+                  <p className="text-xs text-cyan-400/70 mb-3">Suggested from directory</p>
 
-                      const newFriend: Friend = {
-                        id: person.id,
-                        name: person.name,
-                        username: person.username,
-                        location: 'Festival Grounds',
-                        distance: '??m',
-                        status: 'online',
-                        avatar: person.avatar,
-                        gradient: person.gradient,
-                        lastSeen: 'Active now',
-                        recentActivity: 'Just connected',
-                      };
-                      setFriends((prev) => [newFriend, ...prev]);
-                    }}
+                  <button
+                    onClick={() => addFriend(person)}
                     className="w-full px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-lg text-cyan-200 font-medium transition-all text-sm"
                   >
                     Add Friend
@@ -302,7 +421,9 @@ export function FriendsView() {
 
           <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-2xl p-6">
             <h3 className="text-white font-bold mb-2">Create a Group</h3>
-            <p className="text-purple-200/80 text-sm mb-4">Coordinate with multiple friends and share alerts together</p>
+            <p className="text-purple-200/80 text-sm mb-4">
+              Coordinate with multiple friends and share alerts together
+            </p>
             <button className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white font-medium transition-all text-sm">
               Create Group
             </button>
@@ -310,16 +431,75 @@ export function FriendsView() {
         </div>
       </div>
 
+      {/* Add Friend Modal */}
+      {addOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setAddOpen(false)}
+        >
+          <div
+            className="w-full max-w-md bg-slate-900/90 border border-cyan-500/20 rounded-2xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold text-lg">Add Friend by Username</h3>
+              <button className="text-white/70 hover:text-white" onClick={() => setAddOpen(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <input
+              value={usernameInput}
+              onChange={(e) => setUsernameInput(e.target.value)}
+              placeholder="Type username, e.g. @alexr"
+              className="w-full rounded-xl bg-slate-800/60 border border-cyan-500/20 text-white px-3 py-2 placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+            />
+
+            <button
+              className="mt-3 w-full px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl text-white font-semibold"
+              onClick={() => {
+                const u = normUser(usernameInput);
+                if (!u) return;
+
+                const directoryMatch = MOCK_DIRECTORY.find((p) => normUser(p.username) === u);
+
+                if (!directoryMatch) {
+                  alert('User not found in directory.');
+                  return;
+                }
+
+                const alreadyFriend = friends.some((f) => normUser(f.username) === u);
+                if (alreadyFriend) {
+                  alert('They are already in your friends list.');
+                  return;
+                }
+
+                addFriend(directoryMatch);
+                setUsernameInput('');
+                setAddOpen(false);
+              }}
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Messaging Modal */}
       {activeFriend && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setActiveChatFriendId(null)}>
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setActiveChatFriendId(null)}
+        >
           <div
             className="w-full max-w-lg bg-slate-900/90 border border-cyan-500/20 rounded-2xl p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${activeFriend.gradient} flex items-center justify-center text-white font-semibold`}>
+                <div
+                  className={`w-11 h-11 rounded-xl bg-gradient-to-br ${activeFriend.gradient} flex items-center justify-center text-white font-semibold`}
+                >
                   {activeFriend.avatar}
                 </div>
                 <div>
