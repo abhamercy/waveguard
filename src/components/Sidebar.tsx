@@ -5,8 +5,10 @@ interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
   onSignOut: () => void;
-  onOpenNotifications: () => void; // ✅
+  onOpenNotifications: () => void;
+  onOpenSettings: () => void; // ✅ ADD
 }
+
 
 function AuraFlowLogo() {
   return (
@@ -45,8 +47,10 @@ export function Sidebar({
   currentView,
   onViewChange,
   onSignOut,
-  onOpenNotifications, // ✅ IMPORTANT: destructure it
+  onOpenNotifications,
+  onOpenSettings,
 }: SidebarProps) {
+
   const navItems = [
     { id: "dashboard" as ViewType, icon: Zap, label: "Dashboard" },
     { id: "map" as ViewType, icon: Map, label: "Live Map" },
@@ -90,23 +94,28 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className="p-4 border-t border-cyan-500/20 space-y-2">
-        {/* ✅ Notifications button should be ONE button */}
-        <button
-          onClick={onOpenNotifications}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-cyan-100/70 hover:bg-slate-800/50 transition-all"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="font-medium">Notifications</span>
-          <span className="ml-auto bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs px-2 py-1 rounded-full">
-            5
-          </span>
-        </button>
+    
 
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-cyan-100/70 hover:bg-slate-800/50 transition-all">
-          <Settings className="w-5 h-5" />
-          <span className="font-medium">Settings</span>
-        </button>
+       <div className="p-4 border-t border-cyan-500/20 space-y-2">
+  <button
+    onClick={onOpenNotifications}
+    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-cyan-100/70 hover:bg-slate-800/50 transition-all"
+  >
+    <Bell className="w-5 h-5" />
+    <span className="font-medium">Notifications</span>
+    <span className="ml-auto bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs px-2 py-1 rounded-full">
+      5
+    </span>
+  </button>
+
+  <button
+    onClick={onOpenSettings}
+    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-cyan-100/70 hover:bg-slate-800/50 transition-all"
+  >
+    <Settings className="w-5 h-5" />
+    <span className="font-medium">Settings</span>
+  </button>
+
       </div>
 
       <div className="p-4 border-t border-cyan-500/20">

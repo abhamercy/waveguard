@@ -8,6 +8,7 @@ import { EventsView } from './components/EventsView';
 import { SignInPage } from './components/SignInPage';
 import { NotificationsModal } from './components/NotificationsModal'; // ✅ ADD
 import type { ViewType } from "./types";
+import { SettingsModal } from './components/SettingsModal';
 
 type Session = { email: string };
 
@@ -21,6 +22,7 @@ export default function App() {
 
   // ✅ ADD: notifications open state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const [session, setSession] = useState<Session | null>(null);
 
@@ -59,12 +61,14 @@ export default function App() {
 
   return (
     <div className="flex h-screen flex-col md:flex-row overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
-      <Sidebar
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        onSignOut={handleSignOut}
-        onOpenNotifications={() => setIsNotificationsOpen(true)} // ✅ ADD
-      />
+   <Sidebar
+  currentView={currentView}
+  onViewChange={setCurrentView}
+  onSignOut={handleSignOut}
+  onOpenNotifications={() => setIsNotificationsOpen(true)}
+  onOpenSettings={() => setIsSettingsOpen(true)} // ✅ ADD
+/>
+
 
       <main className="flex-1 overflow-y-auto">
         {currentView === "dashboard" && (
@@ -105,6 +109,13 @@ export default function App() {
         {isNotificationsOpen && (
           <NotificationsModal onClose={() => setIsNotificationsOpen(false)} />
         )}
+        {isSettingsOpen && (
+  <SettingsModal
+    onClose={() => setIsSettingsOpen(false)}
+    onSignOut={handleSignOut}
+  />
+)}
+
       </main>
     </div>
   );
