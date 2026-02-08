@@ -53,6 +53,7 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
 
   return (
     <aside className="w-full md:w-64 shrink-0 bg-slate-900/50 backdrop-blur-xl border-r border-cyan-500/20 flex flex-col">
+      
       <div className="p-6 border-b border-cyan-500/20">
         <div className="flex items-center gap-3">
           <AuraFlowLogo />
