@@ -612,9 +612,9 @@ const [photos, setPhotos] = useState<Photo[]>([     {
         {
           id: crypto.randomUUID(),
           userId: "you",
-          userName: "You",
-          userAvatar: "YO",
-          userSchool: "Your School",
+          userName: "Amari Kim",
+          userAvatar: "AK",
+          userSchool: "UT at Austin",
           userGradient: "from-cyan-400 to-purple-500",
           eventId: shareTargetEventId,
           caption: "Just shared a moment ✨",
