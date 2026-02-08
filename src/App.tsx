@@ -1,4 +1,3 @@
-// src/App.tsx
 import { useEffect, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
@@ -7,16 +6,22 @@ import { FriendsView } from './components/FriendsView';
 import { AlertsView } from './components/AlertsView';
 import { EventsView } from './components/EventsView';
 import { SignInPage } from './components/SignInPage';
+import { NotificationsModal } from './components/NotificationsModal'; // ✅ ADD
 import type { ViewType } from "./types";
 
 type Session = { email: string };
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
-  const [mapFocus, setMapFocus] = useState<'alerts' | null>(null);
+
+  // ✅ FIX TYPE: you use 'events' later
+  const [mapFocus, setMapFocus] = useState<'alerts' | 'events' | null>(null);
+
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-  // ✅ NEW: login state
+  // ✅ ADD: notifications open state
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -31,7 +36,6 @@ export default function App() {
   }, []);
 
   const handleSignIn = (email: string, _password: string) => {
-    // For now: accept any email/password (no backend yet)
     const next = { email };
     setSession(next);
     localStorage.setItem('interlink_session', JSON.stringify(next));
@@ -44,7 +48,6 @@ export default function App() {
     setCurrentView('dashboard');
   };
 
-  // ✅ If not signed in, only show the login page
   if (!session) {
     return (
       <SignInPage
@@ -59,8 +62,10 @@ export default function App() {
       <Sidebar
         currentView={currentView}
         onViewChange={setCurrentView}
-        onSignOut={handleSignOut} // ✅ new prop
+        onSignOut={handleSignOut}
+        onOpenNotifications={() => setIsNotificationsOpen(true)} // ✅ ADD
       />
+
       <main className="flex-1 overflow-y-auto">
         {currentView === "dashboard" && (
           <DashboardView
@@ -72,31 +77,34 @@ export default function App() {
           />
         )}
 
+        {currentView === 'map' && (
+          <MapView
+            focus={mapFocus}
+            selectedEventId={selectedEventId}
+            onSelectEvent={(eventId) => {
+              setSelectedEventId(eventId);
+              setCurrentView('events');
+            }}
+          />
+        )}
 
-{currentView === 'map' && (
-  <MapView
-    focus={mapFocus}                 // keep your existing focus
-    selectedEventId={selectedEventId}
-    onSelectEvent={(eventId) => {
-      setSelectedEventId(eventId);   // store selection
-      setCurrentView('events');      // go to Events tab
-    }}
-  />
-)}
+        {currentView === 'events' && (
+          <EventsView
+            selectedEventId={selectedEventId}
+            onViewEventOnMap={(id) => {
+              setSelectedEventId(id);
+              setMapFocus('events');
+              setCurrentView('map');
+            }}
+          />
+        )}
 
-
-{currentView === 'events' && (
-  <EventsView
-    selectedEventId={selectedEventId}
-    onViewEventOnMap={(id) => {
-      setSelectedEventId(id);
-      setMapFocus('events');
-      setCurrentView('map');
-    }}
-  />
-)}
         {currentView === 'friends' && <FriendsView />}
         {currentView === 'alerts' && <AlertsView />}
+
+        {isNotificationsOpen && (
+          <NotificationsModal onClose={() => setIsNotificationsOpen(false)} />
+        )}
       </main>
     </div>
   );
