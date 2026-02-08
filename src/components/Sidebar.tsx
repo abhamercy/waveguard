@@ -4,7 +4,10 @@ import type { ViewType } from "../types";
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
+  onSignOut: () => void; 
 }
+
+
 
 function AuraFlowLogo() {
   return (
@@ -42,7 +45,7 @@ function AuraFlowLogo() {
   );
 }
 
-export function Sidebar({ currentView, onViewChange }: SidebarProps) {
+export function Sidebar({ currentView, onViewChange, onSignOut }: SidebarProps) {
   const navItems = [
     { id: 'dashboard' as ViewType, icon: Zap, label: 'Dashboard' },
     { id: 'map' as ViewType, icon: Map, label: 'Live Map' },
@@ -101,21 +104,26 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
         </button>
       </div>
 
-      <div className="p-4 border-t border-cyan-500/20">
-        <div className="flex items-center gap-3 px-2 mb-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center text-white font-semibold ring-2 ring-cyan-400/50">
-            AK
-          </div>
-          <div className="flex-1">
-            <p className="font-medium text-cyan-100 text-sm">Amari Kim</p>
-            <p className="text-xs text-cyan-300/60">Premium Member</p>
-          </div>
-        </div>
-        <button className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-all text-sm">
-          <LogOut className="w-4 h-4" />
-          <span>Sign Out</span>
-        </button>
-      </div>
+  <div className="p-4 border-t border-cyan-500/20">
+  <div className="flex items-center gap-3 px-2 mb-3">
+    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center text-white font-semibold ring-2 ring-cyan-400/50">
+      AK
+    </div>
+    <div className="flex-1">
+      <p className="font-medium text-cyan-100 text-sm">Amari Kim</p>
+      <p className="text-xs text-cyan-300/60">Premium Member</p>
+    </div>
+  </div>
+
+  <button
+    onClick={onSignOut}
+    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-all text-sm"
+  >
+    <LogOut className="w-4 h-4" />
+    <span>Sign Out</span>
+  </button>
+</div>
+
     </aside>
   );
 }
