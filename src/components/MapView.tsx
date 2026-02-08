@@ -13,7 +13,8 @@ interface Alert {
   isFriend: boolean;
 }
 
-export function MapView() {
+export function MapView({ focus }: { focus: 'alerts' | null }) {
+  
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [showFilter, setShowFilter] = useState({

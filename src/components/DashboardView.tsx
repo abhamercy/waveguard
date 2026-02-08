@@ -9,11 +9,28 @@ import {
   Navigation,
 } from "lucide-react";
 
-export function DashboardView() {
+export function DashboardView({
+  onViewAlertsOnMap,
+  onFindMoreFriends,
+}: {
+  onViewAlertsOnMap: () => void;
+  onFindMoreFriends: () => void;
+}) {
+  
   const [isReportOpen, setIsReportOpen] = useState(false);
 
   type Severity = "low" | "medium" | "high" | "critical";
   type ReportType = "crowd" | "medical" | "safety" | "navigation";
+type Friend = {
+  name: string;
+  location: string;
+  distance: string;
+  status: 'online' | 'away';
+  avatar: string;
+  gradient: string;
+};
+
+const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 
   const [reportForm, setReportForm] = useState({
     type: "safety" as ReportType,
@@ -147,10 +164,10 @@ export function DashboardView() {
     <div className="p-8 space-y-6">
       <div>
         <h2 className="text-3xl font-bold text-white mb-2">
-          Welcome back, Alex!
+          Welcome back, Amari!
         </h2>
         <p className="text-cyan-300/70">
-          Stay connected and stay safe at Summer Beats Festival 2026
+          Stay connected and stay safe!
         </p>
       </div>
 
@@ -213,18 +230,26 @@ export function DashboardView() {
                           {alert.time}
                         </span>
                       </div>
-                      <button className="text-xs text-cyan-400 hover:text-cyan-300 font-medium">
-                        View on map →
-                      </button>
+                      <button
+  onClick={onViewAlertsOnMap}
+  className="text-xs text-cyan-400 hover:text-cyan-300 font-medium"
+>
+  View on map →
+</button>
+
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
-          <button className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 rounded-xl text-cyan-100 font-medium transition-all">
-            View All Alerts on Map
-          </button>
+         <button
+  onClick={onViewAlertsOnMap}
+  className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 rounded-xl text-cyan-100 font-medium transition-all"
+>
+  View All Alerts on Map
+</button>
+
         </div>
 
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/20">
@@ -233,11 +258,13 @@ export function DashboardView() {
             Friends Nearby
           </h3>
           <div className="space-y-3">
-            {friendsNearby.map((friend, index) => (
-              <div
-                key={index}
-                className="bg-slate-900/30 rounded-xl p-3 border border-cyan-500/10 hover:border-cyan-500/30 transition-all"
-              >
+ {friendsNearby.map((friend, index) => (
+  <button
+    key={index}
+    onClick={() => setSelectedFriend(friend)}
+    className="w-full text-left bg-slate-900/30 rounded-xl p-3 border border-cyan-500/10 hover:border-cyan-500/30 transition-all"
+  >
+
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-12 h-12 rounded-full bg-gradient-to-br ${friend.gradient} flex items-center justify-center text-white font-semibold text-sm ring-2 ring-cyan-400/30`}
@@ -261,12 +288,65 @@ export function DashboardView() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
+            {selectedFriend && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className="w-full max-w-md rounded-2xl border border-cyan-500/30 bg-slate-900/90 backdrop-blur p-6">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-12 h-12 rounded-full bg-gradient-to-br ${selectedFriend.gradient} flex items-center justify-center text-white font-semibold text-sm ring-2 ring-cyan-400/30`}
+          >
+            {selectedFriend.avatar}
           </div>
-          <button className="w-full mt-4 px-4 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-xl text-purple-200 font-medium transition-all">
-            Find More Friends
-          </button>
+          <div>
+            <h3 className="text-lg font-bold text-white">{selectedFriend.name}</h3>
+            <p className="text-sm text-cyan-300/70">
+              {selectedFriend.status === "online" ? "Online now" : "Away"}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setSelectedFriend(null)}
+          className="text-cyan-200/70 hover:text-white text-sm"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="space-y-2 text-sm text-cyan-200/80">
+        <p><span className="text-cyan-400">Location:</span> {selectedFriend.location}</p>
+        <p><span className="text-cyan-400">Distance:</span> {selectedFriend.distance}</p>
+      </div>
+
+      <div className="mt-5 flex gap-2">
+        <button
+          className="flex-1 px-4 py-2 rounded-xl border border-cyan-500/30 text-cyan-100 hover:bg-cyan-500/10"
+          onClick={() => alert(`Message sent to ${selectedFriend.name} ✅`)}
+        >
+          Message
+        </button>
+        <button
+          className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-cyan-500/25"
+          onClick={() => alert(`Meet-up request sent to ${selectedFriend.name} ✅`)}
+        >
+          Meet Up
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+          </div>
+       <button
+  onClick={onFindMoreFriends}
+  className="w-full mt-4 px-4 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-xl text-purple-200 font-medium transition-all"
+>
+  Find More Friends
+</button>
+
         </div>
       </div>
 

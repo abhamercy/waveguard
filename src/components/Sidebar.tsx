@@ -107,7 +107,7 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
             AK
           </div>
           <div className="flex-1">
-            <p className="font-medium text-cyan-100 text-sm">Alex Kim</p>
+            <p className="font-medium text-cyan-100 text-sm">Amari Kim</p>
             <p className="text-xs text-cyan-300/60">Premium Member</p>
           </div>
         </div>
