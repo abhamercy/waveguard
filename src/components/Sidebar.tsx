@@ -59,9 +59,9 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
           <AuraFlowLogo />
           <div>
             <h1 className="text-2xl font-bold bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 text-transparent">
-              AuraFlow
+              InterLink
             </h1>
-            <p className="text-xs text-cyan-300/70">Community Safety</p>
+            <p className="text-xs text-cyan-300/70">Bringing Safety to You</p>
           </div>
         </div>
       </div>
