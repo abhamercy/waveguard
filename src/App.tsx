@@ -72,8 +72,29 @@ export default function App() {
           />
         )}
 
-        {currentView === 'map' && <MapView focus={mapFocus} />}
-        {currentView === 'events' && <EventsView selectedEventId={selectedEventId} />}
+
+{currentView === 'map' && (
+  <MapView
+    focus={mapFocus}                 // keep your existing focus
+    selectedEventId={selectedEventId}
+    onSelectEvent={(eventId) => {
+      setSelectedEventId(eventId);   // store selection
+      setCurrentView('events');      // go to Events tab
+    }}
+  />
+)}
+
+
+{currentView === 'events' && (
+  <EventsView
+    selectedEventId={selectedEventId}
+    onViewEventOnMap={(id) => {
+      setSelectedEventId(id);
+      setMapFocus('events');
+      setCurrentView('map');
+    }}
+  />
+)}
         {currentView === 'friends' && <FriendsView />}
         {currentView === 'alerts' && <AlertsView />}
       </main>
