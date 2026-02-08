@@ -23,6 +23,8 @@ export function MapView() {
     navigation: true,
     friendsOnly: false,
   });
+  const [isPickingLocation, setIsPickingLocation] = useState(false);
+
 
   const getCanvasXYFromClient = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
@@ -212,14 +214,16 @@ export function MapView() {
     const x = ((e.clientX - rect.left) * canvas.width) / rect.width;
     const y = ((e.clientY - rect.top) * canvas.height) / rect.height;
 
-    // If reporting, click sets the new marker location
-    if (isReportOpen) {
+    // If we are picking a location for the report, save it and reopen modal
+    if (isPickingLocation) {
       setPendingLocation({ x, y });
+      setIsPickingLocation(false);
+      setIsReportOpen(true);
       setSelectedAlert(null);
       return;
     }
 
-    // Otherwise, click selects an existing marker
+    // Normal behavior: select an existing marker
     const clickedAlert = alerts.find((alert) => {
       const distance = Math.hypot(alert.x - x, alert.y - y);
       return distance < 15;
@@ -227,6 +231,7 @@ export function MapView() {
 
     setSelectedAlert(clickedAlert || null);
   };
+
 
   const setDefaultLocation = () => {
     // center of your 600x450 canvas
@@ -420,14 +425,8 @@ export function MapView() {
       </div>
       {/* MODAL OUTSIDE GRID */}
       {isReportOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-          onClick={(e) => {
-            // click anywhere: if the click corresponds to a point over the canvas, set it
-            const pt = getCanvasXYFromClient(e.clientX, e.clientY);
-            if (pt) setPendingLocation(pt);
-          }}
-        >
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+
 
           <div
             className="w-full max-w-lg bg-slate-900/90 border border-cyan-500/20 rounded-2xl p-6"
@@ -504,7 +503,12 @@ export function MapView() {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={setDefaultLocation}
+                    onClick={() => {
+                      // Close modal and let user click on the map
+                      setIsReportOpen(false);
+                      setIsPickingLocation(true);
+                    }}
+
                     className="px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800/60 text-cyan-100 border border-cyan-500/20 hover:border-cyan-500/40"
                   >
                     Set Location
