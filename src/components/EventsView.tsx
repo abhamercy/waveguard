@@ -13,7 +13,9 @@ import {
 
 interface EventsViewProps {
   selectedEventId?: string | null;
+  onViewEventOnMap?: (eventId: string) => void;
 }
+
 
 interface Event {
   id: string;

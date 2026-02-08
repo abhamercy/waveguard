@@ -1,1 +1,1 @@
-export type ViewType = "dashboard" | "map" | "friends" | "alerts" | "events";
+export type ViewType = "dashboard" | "map" | "events" | "friends" | "alerts";

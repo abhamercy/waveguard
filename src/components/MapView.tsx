@@ -1,5 +1,15 @@
 import { useRef, useEffect, useState } from 'react';
-import { MapPin, Users, AlertTriangle, Heart, Navigation, Shield, Filter, Plus } from 'lucide-react';
+import {
+  MapPin,
+  Users,
+  AlertTriangle,
+  Heart,
+  Navigation,
+  Shield,
+  Filter,
+  Plus,
+  Music,
+} from 'lucide-react';
 
 interface Alert {
   id: string;
@@ -13,37 +23,67 @@ interface Alert {
   isFriend: boolean;
 }
 
-export function MapView({ focus }: { focus: 'alerts' | null }) {
-  
+type LiveEvent = {
+  id: string;
+  name: string;
+  artist: string;
+  x: number;
+  y: number;
+  status: 'live' | 'upcoming';
+  photoCount: number;
+  color: { r: number; g: number; b: number };
+};
+
+export function MapView({
+  focus,
+  selectedEventId,
+  onSelectEvent,
+}: {
+  focus: 'alerts' | 'events' | null;
+  selectedEventId?: string | null;
+  onSelectEvent?: (eventId: string) => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // NEW: a tiny tick so pulses animate (does NOT affect app state)
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const loop = () => {
+      setTick((t) => (t + 1) % 1000000);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // Events on map (you can change these later)
+  const liveEvents: LiveEvent[] = [
+    { id: '1', name: 'Main Stage', artist: 'The Midnight', x: 225, y: 125, status: 'live', photoCount: 127, color: { r: 236, g: 72, b: 153 } },
+    { id: '2', name: 'VIP Stage', artist: 'Porter Robinson', x: 490, y: 140, status: 'upcoming', photoCount: 0, color: { r: 139, g: 92, b: 246 } },
+    { id: '3', name: 'Side Stage', artist: 'ODESZA', x: 460, y: 330, status: 'live', photoCount: 89, color: { r: 34, g: 211, b: 238 } },
+  ];
+
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+
+  // NEW: selected event popup (like Alert Details)
+  const [selectedEvent, setSelectedEvent] = useState<LiveEvent | null>(null);
+
   const [showFilter, setShowFilter] = useState({
     crowd: true,
     medical: true,
     safety: true,
     navigation: true,
     friendsOnly: false,
+
+    // NEW:
+    events: true,
   });
-  const [isPickingLocation, setIsPickingLocation] = useState(false);
-
-
-  const getCanvasXYFromClient = (clientX: number, clientY: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = ((clientX - rect.left) * canvas.width) / rect.width;
-    const y = ((clientY - rect.top) * canvas.height) / rect.height;
-
-    // Only accept clicks that land inside the canvas area
-    if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) return null;
-
-    return { x, y };
-  };
-
 
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(true);
 
+  // keep your existing report flow
+  const [isPickingLocation, setIsPickingLocation] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [draft, setDraft] = useState({
     type: 'crowd' as Alert['type'],
@@ -51,7 +91,6 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
     severity: 'medium' as Alert['severity'],
   });
   const [pendingLocation, setPendingLocation] = useState<{ x: number; y: number } | null>(null);
-
 
   const [alerts, setAlerts] = useState<Alert[]>([
     { id: '1', type: 'crowd', title: 'High Crowd Density', reporter: 'Sarah M.', time: '2 min ago', x: 300, y: 150, severity: 'high', isFriend: true },
@@ -66,51 +105,38 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
 
   const getAlertColor = (type: string, severity: string) => {
     if (severity === 'critical') return { r: 239, g: 68, b: 68 };
-
     switch (type) {
-      case 'crowd':
-        return { r: 251, g: 191, b: 36 };
-      case 'medical':
-        return { r: 239, g: 68, b: 68 };
-      case 'safety':
-        return { r: 34, g: 197, b: 94 };
-      case 'navigation':
-        return { r: 59, g: 130, b: 246 };
-      default:
-        return { r: 6, g: 182, b: 212 };
+      case 'crowd': return { r: 251, g: 191, b: 36 };
+      case 'medical': return { r: 239, g: 68, b: 68 };
+      case 'safety': return { r: 34, g: 197, b: 94 };
+      case 'navigation': return { r: 59, g: 130, b: 246 };
+      default: return { r: 6, g: 182, b: 212 };
     }
   };
 
   const getAlertIcon = (type: string) => {
     switch (type) {
-      case 'crowd':
-        return Users;
-      case 'medical':
-        return Heart;
-      case 'safety':
-        return Shield;
-      case 'navigation':
-        return Navigation;
-      default:
-        return AlertTriangle;
+      case 'crowd': return Users;
+      case 'medical': return Heart;
+      case 'safety': return Shield;
+      case 'navigation': return Navigation;
+      default: return AlertTriangle;
     }
   };
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw base map (festival grounds)
+    // Base
     ctx.fillStyle = 'rgba(30, 41, 59, 0.3)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw zones
+    // Zones
     const zones = [
       { x: 100, y: 50, width: 250, height: 150, label: 'Main Stage', color: 'rgba(6, 182, 212, 0.2)' },
       { x: 400, y: 80, width: 180, height: 120, label: 'VIP Area', color: 'rgba(139, 92, 246, 0.2)' },
@@ -118,77 +144,118 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
       { x: 350, y: 260, width: 220, height: 140, label: 'Side Stage', color: 'rgba(236, 72, 153, 0.2)' },
     ];
 
-    zones.forEach(zone => {
-      ctx.fillStyle = zone.color;
-      ctx.fillRect(zone.x, zone.y, zone.width, zone.height);
+    zones.forEach((z) => {
+      ctx.fillStyle = z.color;
+      ctx.fillRect(z.x, z.y, z.width, z.height);
       ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
       ctx.lineWidth = 2;
-      ctx.strokeRect(zone.x, zone.y, zone.width, zone.height);
+      ctx.strokeRect(z.x, z.y, z.width, z.height);
 
       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(zone.label, zone.x + zone.width / 2, zone.y + zone.height / 2);
+      ctx.fillText(z.label, z.x + z.width / 2, z.y + z.height / 2);
     });
 
-    // Draw alert markers
-    const filteredAlerts = alerts.filter(alert => {
-      if (!showFilter[alert.type]) return false;
-      if (showFilter.friendsOnly && !alert.isFriend) return false;
+    // ===== NEW: Live Event markers (optional overlay) =====
+    if (showFilter.events) {
+      liveEvents.forEach((ev) => {
+        const { r, g, b } = ev.color;
+
+        // Live pulse
+        if (ev.status === 'live') {
+          const pulseRadius = 26 + Math.sin(Date.now() / 250) * 8;
+          const pulse = ctx.createRadialGradient(ev.x, ev.y, 0, ev.x, ev.y, pulseRadius);
+          pulse.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.35)`);
+          pulse.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+          ctx.fillStyle = pulse;
+          ctx.beginPath();
+          ctx.arc(ev.x, ev.y, pulseRadius, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+
+        // Marker body
+        ctx.fillStyle = ev.status === 'live' ? `rgb(${r}, ${g}, ${b})` : 'rgb(100, 116, 139)';
+        ctx.beginPath();
+        ctx.arc(ev.x, ev.y, 12, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Inner dot
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.beginPath();
+        ctx.arc(ev.x, ev.y, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Selection ring (from App selection OR local click)
+        const isSelected = (selectedEventId && selectedEventId === ev.id) || (selectedEvent?.id === ev.id);
+        if (isSelected) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(ev.x, ev.y, 17, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
+
+        // Label only when focusing events (optional)
+        if (focus === 'events') {
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(ev.name, ev.x + 18, ev.y + 4);
+        }
+      });
+    }
+
+    // Alerts
+    const filteredAlerts = alerts.filter((a) => {
+      if (!showFilter[a.type]) return false;
+      if (showFilter.friendsOnly && !a.isFriend) return false;
       return true;
     });
 
-    filteredAlerts.forEach(alert => {
-      // Draw pending marker when reporting
+    filteredAlerts.forEach((a) => {
+      const color = getAlertColor(a.type, a.severity);
 
-      const color = getAlertColor(alert.type, alert.severity);
-
-      // Pulse effect for critical alerts
-      if (alert.severity === 'critical') {
+      if (a.severity === 'critical') {
         const pulseRadius = 25 + Math.sin(Date.now() / 200) * 5;
         ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`;
         ctx.beginPath();
-        ctx.arc(alert.x, alert.y, pulseRadius, 0, 2 * Math.PI);
+        ctx.arc(a.x, a.y, pulseRadius, 0, 2 * Math.PI);
         ctx.fill();
       }
 
-      // Outer glow
-      const gradient = ctx.createRadialGradient(alert.x, alert.y, 5, alert.x, alert.y, 15);
-      gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`);
-      gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
-      ctx.fillStyle = gradient;
+      const glow = ctx.createRadialGradient(a.x, a.y, 5, a.x, a.y, 15);
+      glow.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`);
+      glow.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+      ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(alert.x, alert.y, 15, 0, 2 * Math.PI);
+      ctx.arc(a.x, a.y, 15, 0, 2 * Math.PI);
       ctx.fill();
 
-      // Main pin
       ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
       ctx.beginPath();
-      ctx.arc(alert.x, alert.y, 8, 0, 2 * Math.PI);
+      ctx.arc(a.x, a.y, 8, 0, 2 * Math.PI);
       ctx.fill();
 
-      // Friend indicator
-      if (alert.isFriend) {
+      if (a.isFriend) {
         ctx.strokeStyle = '#fbbf24';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(alert.x, alert.y, 12, 0, 2 * Math.PI);
+        ctx.arc(a.x, a.y, 12, 0, 2 * Math.PI);
         ctx.stroke();
       }
 
-      // Selected indicator
-      if (selectedAlert?.id === alert.id) {
+      if (selectedAlert?.id === a.id) {
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(alert.x, alert.y, 10, 0, 2 * Math.PI);
+        ctx.arc(a.x, a.y, 10, 0, 2 * Math.PI);
         ctx.stroke();
       }
 
-      // Inner dot
       ctx.fillStyle = 'white';
       ctx.beginPath();
-      ctx.arc(alert.x, alert.y, 3, 0, 2 * Math.PI);
+      ctx.arc(a.x, a.y, 3, 0, 2 * Math.PI);
       ctx.fill();
     });
 
@@ -204,8 +271,17 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
       ctx.arc(pendingLocation.x, pendingLocation.y, 4, 0, 2 * Math.PI);
       ctx.fill();
     }
-  }, [alerts, selectedAlert, showFilter, isReportOpen, pendingLocation]);
-
+  }, [
+    alerts,
+    selectedAlert,
+    showFilter,
+    isReportOpen,
+    pendingLocation,
+    focus,
+    selectedEventId,
+    selectedEvent,
+    tick, // drives pulse animation
+  ]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -215,35 +291,42 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
     const x = ((e.clientX - rect.left) * canvas.width) / rect.width;
     const y = ((e.clientY - rect.top) * canvas.height) / rect.height;
 
-    // If we are picking a location for the report, save it and reopen modal
     if (isPickingLocation) {
       setPendingLocation({ x, y });
       setIsPickingLocation(false);
       setIsReportOpen(true);
       setSelectedAlert(null);
+      setSelectedEvent(null);
       return;
     }
 
-    // Normal behavior: select an existing marker
-    const clickedAlert = alerts.find((alert) => {
-      const distance = Math.hypot(alert.x - x, alert.y - y);
-      return distance < 15;
-    });
+    // NEW: click event marker first (if enabled)
+    if (showFilter.events) {
+      const clickedEvent = liveEvents.find((ev) => Math.hypot(ev.x - x, ev.y - y) < 18);
+      if (clickedEvent) {
+        setSelectedEvent(clickedEvent);
+        setSelectedAlert(null);
+        return; // do NOT auto-switch tabs; user wanted popup first
+      }
+    }
 
+    // Existing: click alert marker
+    const clickedAlert = alerts.find((a) => Math.hypot(a.x - x, a.y - y) < 15);
     setSelectedAlert(clickedAlert || null);
+    if (clickedAlert) setSelectedEvent(null);
   };
 
+  const liveCount = liveEvents.filter((e) => e.status === 'live').length;
 
-  const setDefaultLocation = () => {
-    // center of your 600x450 canvas
-    setPendingLocation({ x: 300, y: 225 });
-  };
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-white mb-2">Live Alert Map</h2>
-          <p className="text-cyan-300/70">Real-time community reports across the festival</p>
+          <p className="text-cyan-300/70">
+            Real-time community reports across the festival
+            {showFilter.events ? ` • ${liveCount} live events` : ''}
+          </p>
         </div>
 
         <div className="flex gap-3">
@@ -270,7 +353,6 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* LEFT: MAP */}
         <div className="lg:col-span-3 bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/20">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -283,10 +365,12 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
                 <div className="w-2 h-2 bg-yellow-400 rounded-full ring-2 ring-yellow-400/50" />
                 <span className="text-yellow-200">Friend Reports</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded-lg">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full" />
-                <span className="text-cyan-200">All Reports</span>
-              </div>
+              {showFilter.events && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-pink-500/20 border border-pink-500/30 rounded-lg">
+                  <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse" />
+                  <span className="text-pink-200">Live Events</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -308,26 +392,27 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
                   if (showFilter.friendsOnly && !a.isFriend) return false;
                   return true;
                 }).length
-              }{" "}
+              }{' '}
               active alerts
+              {showFilter.events ? ` • ${liveCount} live events` : ''}
             </span>
 
             <span>Click on markers for details</span>
           </div>
         </div>
 
-        {/* RIGHT: SIDEBAR */}
         <div className="space-y-4">
           {isFilterPanelOpen && (
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/20">
               <h3 className="text-lg font-bold text-white mb-4">Filters</h3>
 
               <div className="space-y-3">
+                {/* existing checkboxes... */}
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={showFilter.crowd}
-                    onChange={(e) => setShowFilter((prev) => ({ ...prev, crowd: e.target.checked }))}
+                    onChange={(e) => setShowFilter((p) => ({ ...p, crowd: e.target.checked }))}
                     className="w-5 h-5 rounded accent-yellow-500"
                   />
                   <Users className="w-4 h-4 text-yellow-400" />
@@ -338,7 +423,7 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
                   <input
                     type="checkbox"
                     checked={showFilter.medical}
-                    onChange={(e) => setShowFilter((prev) => ({ ...prev, medical: e.target.checked }))}
+                    onChange={(e) => setShowFilter((p) => ({ ...p, medical: e.target.checked }))}
                     className="w-5 h-5 rounded accent-red-500"
                   />
                   <Heart className="w-4 h-4 text-red-400" />
@@ -349,7 +434,7 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
                   <input
                     type="checkbox"
                     checked={showFilter.safety}
-                    onChange={(e) => setShowFilter((prev) => ({ ...prev, safety: e.target.checked }))}
+                    onChange={(e) => setShowFilter((p) => ({ ...p, safety: e.target.checked }))}
                     className="w-5 h-5 rounded accent-green-500"
                   />
                   <Shield className="w-4 h-4 text-green-400" />
@@ -360,19 +445,31 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
                   <input
                     type="checkbox"
                     checked={showFilter.navigation}
-                    onChange={(e) => setShowFilter((prev) => ({ ...prev, navigation: e.target.checked }))}
+                    onChange={(e) => setShowFilter((p) => ({ ...p, navigation: e.target.checked }))}
                     className="w-5 h-5 rounded accent-blue-500"
                   />
                   <Navigation className="w-4 h-4 text-blue-400" />
                   <span className="text-cyan-100">Navigation</span>
                 </label>
 
-                <div className="border-t border-cyan-500/20 pt-3">
+                <div className="border-t border-cyan-500/20 pt-3 space-y-3">
+                  {/* NEW: events toggle */}
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showFilter.events}
+                      onChange={(e) => setShowFilter((p) => ({ ...p, events: e.target.checked }))}
+                      className="w-5 h-5 rounded accent-pink-500"
+                    />
+                    <Music className="w-4 h-4 text-pink-400" />
+                    <span className="text-cyan-100 font-medium">Live Events</span>
+                  </label>
+
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={showFilter.friendsOnly}
-                      onChange={(e) => setShowFilter((prev) => ({ ...prev, friendsOnly: e.target.checked }))}
+                      onChange={(e) => setShowFilter((p) => ({ ...p, friendsOnly: e.target.checked }))}
                       className="w-5 h-5 rounded accent-purple-500"
                     />
                     <span className="text-cyan-100 font-medium">Friends Only</span>
@@ -382,6 +479,51 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
             </div>
           )}
 
+          {/* NEW: Event Details popup card (like Alert Details) */}
+          {selectedEvent && showFilter.events && (
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-pink-500/20">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Music className="w-5 h-5 text-pink-400" />
+                Event Details
+              </h3>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="font-semibold text-white">{selectedEvent.name}</p>
+                  <p className="text-sm text-pink-300/80">{selectedEvent.artist}</p>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-cyan-300/70">
+                    Status:{' '}
+                    <span className={selectedEvent.status === 'live' ? 'text-pink-200' : 'text-cyan-200'}>
+                      {selectedEvent.status.toUpperCase()}
+                    </span>
+                  </span>
+
+                  <span className="text-cyan-300/70">
+                    Photos: <span className="text-white font-semibold">{selectedEvent.photoCount}</span>
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => onSelectEvent?.(selectedEvent.id)}
+                  className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-500/30 rounded-lg text-white font-medium transition-all text-sm"
+                >
+                  Open Live Events →
+                </button>
+
+                <button
+                  onClick={() => setSelectedEvent(null)}
+                  className="w-full px-4 py-2 bg-slate-900/30 hover:bg-slate-900/50 border border-cyan-500/10 rounded-lg text-cyan-100/70 transition-all text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* existing Alert Details card */}
           {selectedAlert && (
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/20">
               <h3 className="text-lg font-bold text-white mb-4">Alert Details</h3>
@@ -392,7 +534,6 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
                     const Icon = getAlertIcon(selectedAlert.type);
                     return <Icon className="w-5 h-5 text-cyan-400" />;
                   })()}
-
                   <div>
                     <p className="font-semibold text-white">{selectedAlert.title}</p>
                     <p className="text-xs text-cyan-300/60">{selectedAlert.type}</p>
@@ -400,17 +541,9 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
                 </div>
 
                 <div className="text-sm text-cyan-200/80 space-y-1">
-                  <p>
-                    <span className="text-cyan-400">Reporter:</span> {selectedAlert.reporter}
-                  </p>
-                  <p>
-                    <span className="text-cyan-400">Time:</span> {selectedAlert.time}
-                  </p>
-                  <p>
-                    <span className="text-cyan-400">Severity:</span>{" "}
-                    <span className="capitalize">{selectedAlert.severity}</span>
-                  </p>
-
+                  <p><span className="text-cyan-400">Reporter:</span> {selectedAlert.reporter}</p>
+                  <p><span className="text-cyan-400">Time:</span> {selectedAlert.time}</p>
+                  <p><span className="text-cyan-400">Severity:</span> <span className="capitalize">{selectedAlert.severity}</span></p>
                   {selectedAlert.isFriend && (
                     <p className="flex items-center gap-1 text-yellow-400">⭐ Reported by friend</p>
                   )}
@@ -424,8 +557,8 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
           )}
         </div>
       </div>
-      {/* MODAL OUTSIDE GRID */}
-      {isReportOpen && (
+
+     {isReportOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
 
 
@@ -555,4 +688,8 @@ export function MapView({ focus }: { focus: 'alerts' | null }) {
       )}
     </div>
   );
-} 
+}
+
+
+
+   

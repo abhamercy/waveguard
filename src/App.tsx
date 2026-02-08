@@ -9,10 +9,8 @@ import type { ViewType } from "./types";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
-  const [mapFocus, setMapFocus] = useState<'alerts' | null>(null);
-
-  // NEW: event selection (optional, for future map->event deep link)
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+const [mapFocus, setMapFocus] = useState<'alerts' | 'events' | null>(null);
+const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   return (
     <div className="flex h-screen flex-col md:flex-row overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
@@ -28,8 +26,29 @@ export default function App() {
           />
         )}
 
-        {currentView === 'map' && <MapView focus={mapFocus} />}
-        {currentView === 'events' && <EventsView selectedEventId={selectedEventId} />}
+        // App.tsx
+{currentView === 'map' && (
+  <MapView
+    focus={mapFocus}                 // keep your existing focus
+    selectedEventId={selectedEventId}
+    onSelectEvent={(eventId) => {
+      setSelectedEventId(eventId);   // store selection
+      setCurrentView('events');      // go to Events tab
+    }}
+  />
+)}
+
+
+{currentView === 'events' && (
+  <EventsView
+    selectedEventId={selectedEventId}
+    onViewEventOnMap={(id) => {
+      setSelectedEventId(id);
+      setMapFocus('events');
+      setCurrentView('map');
+    }}
+  />
+)}
         {currentView === 'friends' && <FriendsView />}
         {currentView === 'alerts' && <AlertsView />}
       </main>
