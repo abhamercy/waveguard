@@ -1,8 +1,32 @@
-import { UserPlus, Search, MapPin, MessageCircle, Navigation } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { UserPlus, Search, MapPin, MessageCircle, X, Send } from 'lucide-react';
+
+type FriendStatus = 'online' | 'away' | 'offline';
+
+type Friend = {
+  id: string; // unique
+  name: string;
+  username: string;
+  location: string;
+  distance: string;
+  status: FriendStatus;
+  avatar: string;
+  gradient: string;
+  lastSeen: string;
+  recentActivity: string;
+};
+
+type ChatMessage = {
+  id: string;
+  from: 'me' | 'them';
+  text: string;
+  time: string;
+};
 
 export function FriendsView() {
-  const friends = [
+  const [friends, setFriends] = useState<Friend[]>([
     {
+      id: 'emma_w',
       name: 'Emma Wilson',
       username: '@emma_w',
       location: 'VIP Lounge',
@@ -14,6 +38,7 @@ export function FriendsView() {
       recentActivity: 'Posted crowd alert 5 min ago',
     },
     {
+      id: 'jakethompson',
       name: 'Jake Thompson',
       username: '@jakethompson',
       location: 'Main Stage',
@@ -25,6 +50,7 @@ export function FriendsView() {
       recentActivity: 'Checked into Main Stage',
     },
     {
+      id: 'lisachen',
       name: 'Lisa Chen',
       username: '@lisachen',
       location: 'Food Court',
@@ -35,64 +61,87 @@ export function FriendsView() {
       lastSeen: 'Active now',
       recentActivity: 'Shared location',
     },
-    {
-      name: 'Mark Davis',
-      username: '@markd',
-      location: 'Side Stage',
-      distance: '1.2km',
-      status: 'away',
-      avatar: 'MD',
-      gradient: 'from-orange-400 to-red-500',
-      lastSeen: '15 min ago',
-      recentActivity: 'Posted navigation tip',
-    },
-    {
-      name: 'Sarah Mitchell',
-      username: '@sarahm',
-      location: 'Rest Area',
-      distance: '890m',
-      status: 'online',
-      avatar: 'SM',
-      gradient: 'from-pink-400 to-purple-500',
-      lastSeen: 'Active now',
-      recentActivity: 'Found lost item',
-    },
-    {
-      name: 'Chris Anderson',
-      username: '@chris_a',
-      location: 'Entry Gate',
-      distance: '2.1km',
-      status: 'offline',
-      avatar: 'CA',
-      gradient: 'from-slate-400 to-gray-500',
-      lastSeen: '1 hour ago',
-      recentActivity: 'Left the festival',
-    },
-  ];
+  ]);
 
-  const suggestions = [
-    {
-      name: 'Alex Rodriguez',
-      username: '@alexr',
-      mutualFriends: 5,
-      avatar: 'AR',
-      gradient: 'from-yellow-400 to-orange-500',
-    },
-    {
-      name: 'Nina Patel',
-      username: '@ninapatel',
-      mutualFriends: 3,
-      avatar: 'NP',
-      gradient: 'from-indigo-400 to-purple-500',
-    },
-    {
-      name: 'Tom Bradley',
-      username: '@tombrad',
-      mutualFriends: 7,
-      avatar: 'TB',
-      gradient: 'from-teal-400 to-cyan-500',
-    },
-  ];
+  const [suggestions] = useState([
+    { id: 'alexr', name: 'Alex Rodriguez', username: '@alexr', mutualFriends: 5, avatar: 'AR', gradient: 'from-yellow-400 to-orange-500' },
+    { id: 'ninapatel', name: 'Nina Patel', username: '@ninapatel', mutualFriends: 3, avatar: 'NP', gradient: 'from-indigo-400 to-purple-500' },
+    { id: 'tombrad', name: 'Tom Bradley', username: '@tombrad', mutualFriends: 7, avatar: 'TB', gradient: 'from-teal-400 to-cyan-500' },
+  ]);
+
+  // Search bar for filtering friends list
+  const [search, setSearch] = useState('');
+
+  const filteredFriends = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return friends;
+    return friends.filter((f) => {
+      return (
+        f.name.toLowerCase().includes(q) ||
+        f.username.toLowerCase().includes(q) ||
+        f.location.toLowerCase().includes(q)
+      );
+    });
+  }, [friends, search]);
+
+  // ----- Messaging state -----
+  const [activeChatFriendId, setActiveChatFriendId] = useState<string | null>(null);
+  const [draftMsg, setDraftMsg] = useState('');
+  const [chats, setChats] = useState<Record<string, ChatMessage[]>>({
+    emma_w: [
+      { id: 'm1', from: 'them', text: 'I’m near VIP. You good?', time: '9:12 PM' },
+      { id: 'm2', from: 'me', text: 'Yeah! Heading your way.', time: '9:13 PM' },
+    ],
+    jakethompson: [{ id: 'm1', from: 'them', text: 'Main stage is packed rn', time: '9:08 PM' }],
+  });
+
+  const activeFriend = useMemo(
+    () => friends.find((f) => f.id === activeChatFriendId) ?? null,
+    [friends, activeChatFriendId]
+  );
+
+  const activeMessages = useMemo(() => {
+    if (!activeChatFriendId) return [];
+    return chats[activeChatFriendId] ?? [];
+  }, [activeChatFriendId, chats]);
+
+  const timeNow = () => {
+    const d = new Date();
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
+
+  const sendMessage = () => {
+    if (!activeChatFriendId) return;
+    const text = draftMsg.trim();
+    if (!text) return;
+
+    const msg: ChatMessage = {
+      id: crypto.randomUUID(),
+      from: 'me',
+      text,
+      time: timeNow(),
+    };
+
+    setChats((prev) => ({
+      ...prev,
+      [activeChatFriendId]: [...(prev[activeChatFriendId] ?? []), msg],
+    }));
+    setDraftMsg('');
+
+    // Optional: simple “auto-reply” for demo feel
+    window.setTimeout(() => {
+      const reply: ChatMessage = {
+        id: crypto.randomUUID(),
+        from: 'them',
+        text: 'Got it!',
+        time: timeNow(),
+      };
+      setChats((prev) => ({
+        ...prev,
+        [activeChatFriendId]: [...(prev[activeChatFriendId] ?? []), reply],
+      }));
+    }, 600);
+  };
 
   return (
     <div className="p-8 space-y-6">
@@ -101,6 +150,7 @@ export function FriendsView() {
           <h2 className="text-3xl font-bold text-white mb-2">Friends Network</h2>
           <p className="text-cyan-300/70">Stay connected with your festival crew</p>
         </div>
+
         <button className="bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/25 transition-all flex items-center gap-2">
           <UserPlus className="w-5 h-5" />
           Add Friends
@@ -110,7 +160,9 @@ export function FriendsView() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/20">
           <div className="text-center">
-            <div className="text-4xl font-bold text-white mb-1">{friends.filter(f => f.status === 'online').length}</div>
+            <div className="text-4xl font-bold text-white mb-1">
+              {friends.filter((f) => f.status === 'online').length}
+            </div>
             <p className="text-cyan-300/70 text-sm">Friends Online</p>
           </div>
         </div>
@@ -128,10 +180,13 @@ export function FriendsView() {
         </div>
       </div>
 
+      {/* Search */}
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-4 border border-cyan-500/20">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-cyan-400/60" />
           <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             type="text"
             placeholder="Search friends..."
             className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-cyan-500/20 rounded-xl text-white placeholder-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
@@ -140,24 +195,33 @@ export function FriendsView() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Friends list */}
         <div className="lg:col-span-2 space-y-4">
           <h3 className="text-xl font-bold text-white">Friends at Festival</h3>
+
           <div className="space-y-3">
-            {friends.map((friend, index) => (
+            {filteredFriends.map((friend) => (
               <div
-                key={index}
+                key={friend.id}
                 className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-5 border border-cyan-500/20 hover:border-cyan-500/40 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${friend.gradient} flex items-center justify-center text-white font-bold text-lg ring-2 ring-cyan-400/30 flex-shrink-0`}>
+                  <div
+                    className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${friend.gradient} flex items-center justify-center text-white font-bold text-lg ring-2 ring-cyan-400/30 flex-shrink-0`}
+                  >
                     {friend.avatar}
                   </div>
+
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="font-bold text-white">{friend.name}</h4>
-                          <div className={`w-2 h-2 rounded-full ${friend.status === 'online' ? 'bg-green-400' : 'bg-gray-400'}`} />
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              friend.status === 'online' ? 'bg-green-400' : friend.status === 'away' ? 'bg-yellow-400' : 'bg-gray-400'
+                            }`}
+                          />
                         </div>
                         <p className="text-sm text-cyan-300/60">{friend.username}</p>
                       </div>
@@ -175,16 +239,14 @@ export function FriendsView() {
 
                     <p className="text-sm text-cyan-200/70 mb-3">{friend.recentActivity}</p>
 
-                    <div className="flex gap-2">
-                      <button className="flex-1 px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 rounded-lg text-cyan-100 font-medium transition-all text-sm flex items-center justify-center gap-2">
-                        <MessageCircle className="w-4 h-4" />
-                        Message
-                      </button>
-                      <button className="flex-1 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-purple-200 font-medium transition-all text-sm flex items-center justify-center gap-2">
-                        <Navigation className="w-4 h-4" />
-                        Navigate
-                      </button>
-                    </div>
+                    {/* Only Message button now */}
+                    <button
+                      onClick={() => setActiveChatFriendId(friend.id)}
+                      className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 rounded-lg text-cyan-100 font-medium transition-all text-sm flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Message
+                    </button>
                   </div>
                 </div>
               </div>
@@ -192,15 +254,13 @@ export function FriendsView() {
           </div>
         </div>
 
+        {/* Suggestions (kept as-is) */}
         <div className="space-y-6">
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/20">
             <h3 className="text-lg font-bold text-white mb-4">Friend Suggestions</h3>
             <div className="space-y-3">
-              {suggestions.map((person, index) => (
-                <div
-                  key={index}
-                  className="bg-slate-900/30 rounded-xl p-4 border border-cyan-500/10"
-                >
+              {suggestions.map((person) => (
+                <div key={person.id} className="bg-slate-900/30 rounded-xl p-4 border border-cyan-500/10">
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${person.gradient} flex items-center justify-center text-white font-semibold`}>
                       {person.avatar}
@@ -211,7 +271,28 @@ export function FriendsView() {
                     </div>
                   </div>
                   <p className="text-xs text-cyan-400/70 mb-3">{person.mutualFriends} mutual friends</p>
-                  <button className="w-full px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-lg text-cyan-200 font-medium transition-all text-sm">
+                  <button
+                    onClick={() => {
+                      // demo add: convert suggestion into a friend
+                      const already = friends.some((f) => f.id === person.id);
+                      if (already) return;
+
+                      const newFriend: Friend = {
+                        id: person.id,
+                        name: person.name,
+                        username: person.username,
+                        location: 'Festival Grounds',
+                        distance: '??m',
+                        status: 'online',
+                        avatar: person.avatar,
+                        gradient: person.gradient,
+                        lastSeen: 'Active now',
+                        recentActivity: 'Just connected',
+                      };
+                      setFriends((prev) => [newFriend, ...prev]);
+                    }}
+                    className="w-full px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-lg text-cyan-200 font-medium transition-all text-sm"
+                  >
                     Add Friend
                   </button>
                 </div>
@@ -221,15 +302,89 @@ export function FriendsView() {
 
           <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-2xl p-6">
             <h3 className="text-white font-bold mb-2">Create a Group</h3>
-            <p className="text-purple-200/80 text-sm mb-4">
-              Coordinate with multiple friends and share alerts together
-            </p>
+            <p className="text-purple-200/80 text-sm mb-4">Coordinate with multiple friends and share alerts together</p>
             <button className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white font-medium transition-all text-sm">
               Create Group
             </button>
           </div>
         </div>
       </div>
+
+      {/* Messaging Modal */}
+      {activeFriend && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setActiveChatFriendId(null)}>
+          <div
+            className="w-full max-w-lg bg-slate-900/90 border border-cyan-500/20 rounded-2xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${activeFriend.gradient} flex items-center justify-center text-white font-semibold`}>
+                  {activeFriend.avatar}
+                </div>
+                <div>
+                  <div className="text-white font-bold leading-tight">{activeFriend.name}</div>
+                  <div className="text-xs text-cyan-300/60">{activeFriend.username}</div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="text-white/70 hover:text-white"
+                onClick={() => setActiveChatFriendId(null)}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="h-72 overflow-y-auto rounded-xl bg-slate-950/40 border border-cyan-500/10 p-3 space-y-2">
+              {activeMessages.length === 0 ? (
+                <div className="text-sm text-cyan-300/60">No messages yet. Say hi.</div>
+              ) : (
+                activeMessages.map((m) => (
+                  <div key={m.id} className={`flex ${m.from === 'me' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm border ${
+                        m.from === 'me'
+                          ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-50'
+                          : 'bg-slate-800/60 border-slate-700/60 text-cyan-100'
+                      }`}
+                    >
+                      <div>{m.text}</div>
+                      <div className="mt-1 text-[11px] opacity-70">{m.time}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <input
+                value={draftMsg}
+                onChange={(e) => setDraftMsg(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') sendMessage();
+                }}
+                placeholder="Type a message..."
+                className="flex-1 rounded-xl bg-slate-800/60 border border-cyan-500/20 text-white px-3 py-2 placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+              />
+              <button
+                type="button"
+                onClick={sendMessage}
+                disabled={!draftMsg.trim()}
+                className={`px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-2 ${
+                  draftMsg.trim()
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white'
+                    : 'bg-slate-800/50 text-white/40 cursor-not-allowed'
+                }`}
+              >
+                <Send className="w-4 h-4" />
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

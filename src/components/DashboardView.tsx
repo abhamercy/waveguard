@@ -324,13 +324,13 @@ const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
       <div className="mt-5 flex gap-2">
         <button
           className="flex-1 px-4 py-2 rounded-xl border border-cyan-500/30 text-cyan-100 hover:bg-cyan-500/10"
-          onClick={() => alert(`Message sent to ${selectedFriend.name} ✅`)}
+          onClick={() => alert(`Message sent to ${selectedFriend.name} `)}
         >
           Message
         </button>
         <button
           className="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-cyan-500/25"
-          onClick={() => alert(`Meet-up request sent to ${selectedFriend.name} ✅`)}
+          onClick={() => alert(`Meet-up request sent to ${selectedFriend.name} `)}
         >
           Meet Up
         </button>
