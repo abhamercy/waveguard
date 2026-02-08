@@ -6,7 +6,7 @@ import { FriendsView } from './components/FriendsView';
 import { AlertsView } from './components/AlertsView';
 import { EventsView } from './components/EventsView';
 import { SignInPage } from './components/SignInPage';
-import { NotificationsModal } from './components/NotificationsModal'; // ✅ ADD
+import { NotificationsModal } from './components/NotificationsModal'; 
 import type { ViewType } from "./types";
 import { SettingsModal } from './components/SettingsModal';
 
@@ -15,12 +15,12 @@ type Session = { email: string };
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
 
-  // ✅ FIX TYPE: you use 'events' later
+  //FIX TYPE: you use 'events' later
   const [mapFocus, setMapFocus] = useState<'alerts' | 'events' | null>(null);
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-  // ✅ ADD: notifications open state
+  // ADD: notifications open state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
