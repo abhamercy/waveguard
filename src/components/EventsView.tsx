@@ -89,7 +89,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
       userId: "u1",
       userName: "Emma Wilson",
       userAvatar: "EW",
-      userSchool: "Stanford University",
+      userSchool: "UT at Austin",
       userGradient: "from-cyan-400 to-blue-500",
       eventId: "1",
       caption: "The energy here is insane! 🔥",
@@ -412,7 +412,7 @@ export function EventsView({ selectedEventId = null }: EventsViewProps) {
             </h3>
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                <span className="text-purple-300">Stanford</span>
+                <span className="text-purple-300">UT at Austin</span>
                 <span className="text-white font-bold">24</span>
               </div>
               <div className="flex items-center justify-between p-2 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
